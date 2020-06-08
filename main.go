@@ -10,11 +10,16 @@ import (
 	"sync"
 )
 
+type CountGo struct {
+	URL     string
+	CountGo int
+}
+
 func main() {
 	maxGoroutin := 5
 	maxCountURL := 1000
 	chURL := make(chan string, maxGoroutin)
-	chRes := make(chan map[string]int, maxCountURL)
+	chRes := make(chan CountGo, maxCountURL)
 	toFind := "Go"
 	wg := sync.WaitGroup{}
 
@@ -31,7 +36,7 @@ func main() {
 	ReadResult(chRes)
 }
 
-func Get(chUrl chan string, chRes chan map[string]int, wg *sync.WaitGroup, toFind string) {
+func Get(chUrl chan string, chRes chan CountGo, wg *sync.WaitGroup, toFind string) {
 	url := <- chUrl
 
 	defer wg.Done()
@@ -47,18 +52,16 @@ func Get(chUrl chan string, chRes chan map[string]int, wg *sync.WaitGroup, toFin
 
 	cnt := strings.Count(string(body), toFind)
 
-	chRes <- map[string]int{url: cnt}
+	chRes <- CountGo{URL: url, CountGo: cnt}
 }
 
-func ReadResult(chRes chan map[string]int) {
+func ReadResult(chRes chan CountGo) {
 	total := 0
 	for {
 		select {
 		case res := <-chRes:
-			for k, v := range res {
-				fmt.Printf("Count for %s: %d\n", k, v)
-				total += v
-			}
+			fmt.Printf("Count for %s: %d\n", res.URL, res.CountGo)
+			total += res.CountGo
 		default:
 			fmt.Printf("Total: %d\n", total)
 			return
